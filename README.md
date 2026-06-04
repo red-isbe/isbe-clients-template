@@ -1,79 +1,82 @@
 # isbe-clients-template
 
-Plantilla para desplegar contratos inteligentes propios en una red local de ISBE.
+Template for deploying custom smart contracts on a local ISBE network.
 
-Este repositorio incluye todo lo necesario para: levantar una red ISBE local con Docker, escribir y compilar contratos Solidity, y desplegarlos en la red mediante el patrón Diamond (EIP-2535).
+This repository includes everything you need to: spin up a local ISBE network with Docker, write and compile Solidity contracts, and deploy them using the Diamond pattern (EIP-2535).
 
-Para más información sobre ISBE, consulta la documentación oficial: [Red ISBE](https://docs.redisbe.com/documentation/)
+For more information about ISBE, see the official documentation: [Red ISBE](https://docs.redisbe.com/documentation/)
 
 ---
 
-## Requisitos previos
+## Prerequisites
 
 - [Node.js](https://nodejs.org/) >= 18
-- [Docker](https://www.docker.com/) instalado y en ejecución
-- [`jq`](https://stedolan.github.io/jq/) — procesador JSON usado por los scripts de red
+- [Docker](https://www.docker.com/) installed and running
+- [`jq`](https://stedolan.github.io/jq/) — JSON processor used by the network scripts
   - macOS: `brew install jq`
   - Ubuntu/Debian: `apt-get install jq`
 
 ---
 
-## Estructura del proyecto
+## Project structure
 
 ```
 contracts/
-  commons/                   — constantes compartidas (roles, storage slots, config IDs)
-  project-contracts/         — contratos de ejemplo: sustituir por los propios
-  testwrapper/               — wrapper para tests unitarios
+  constants/                   — shared constants (roles, storage slots, config IDs)
+  project-contracts/           — example contracts: replace with your own
+  testwrapper/                 — wrapper for unit tests
 scripts/
-  deployContracts.ts         — script de despliegue Diamond en tres pasos
-isbe-network-case/           — entorno de red local ISBE (Docker + Besu)
-  startNetwork.sh            — arranca la red
-  stopNetwork.sh             — para la red
-  QBFT-Network/              — datos de los nodos (claves, génesis, etc.)
+  deployContracts.ts           — three-step Diamond deployment script
+isbe-network-case/             — local ISBE network environment (Docker + Besu)
+  startNetwork.sh              — starts the network
+  stopNetwork.sh               — stops the network
+  QBFT-Network/                — node data (keys, genesis, etc.)
 ```
 
 ---
 
-## Instalación
+## Installation
 
 ```bash
 npm install
 ```
 
-Copia el archivo de variables de entorno y rellena los valores:
+Copy the environment file and fill in the values:
 
 ```bash
 cp .env_sample .env
 ```
 
-Edita `.env`:
+Edit `.env` with the **Hardhat Account #0** credentials:
 
 ```env
-ACCOUNT_PRIVATE_KEY=0xtu_clave_privada
+ACCOUNT_ADDRESS=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+ACCOUNT_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 LOCALHOST_URL=http://localhost:8545
 ```
 
-> Las claves de las cuentas disponibles en la red local se encuentran en `isbe-network-case`.
+> Account #0 must be used because it is the pre-funded account in the local network genesis with admin permissions for deployment.
+>
+> ⚠️ These credentials are public and only valid for local development. **Never use them on mainnet or any environment with real value.**
 
 ---
 
-## 1. Levantar la red local
+## 1. Start the local network
 
-Desde la carpeta `isbe-network-case`:
+From the `isbe-network-case` folder:
 
 ```bash
 cd isbe-network-case
 ./startNetwork.sh
 ```
 
-Esto levanta 4 nodos Besu con QBFT mediante Docker. Para comprobar que están corriendo:
+This starts 4 Besu nodes with QBFT via Docker. To check they are running:
 
 ```bash
 docker ps
 ```
 
-Para parar la red:
+To stop the network:
 
 ```bash
 ./stopNetwork.sh
@@ -81,28 +84,28 @@ Para parar la red:
 
 ---
 
-## 2. Añadir los contratos propios
+## 2. Add your own contracts
 
-Los contratos de ejemplo en `contracts/project-contracts/` sirven como referencia para pruebas en local. A la hora de integrar los contratos propios hay dos opciones:
+The example contracts in `contracts/project-contracts/` serve as a reference for local testing. When integrating your own contracts there are two options:
 
-**Opción A — Renombrar los contratos propios para encajar en la estructura de ejemplo.** Renombra tus contratos a `ProjectFacet`, `ProjectInternal`, etc. De este modo el script de despliegue y los commons apenas necesitan cambios.
+**Option A — Rename your contracts to fit the example structure.** Rename your contracts to `ProjectFacet`, `ProjectInternal`, etc. This way the deployment script and constants need minimal changes.
 
-**Opción B — Sustituir la estructura entera.** Borra los contratos de ejemplo y coloca los tuyos con su propia nomenclatura. En este caso hay que actualizar también el script de despliegue y los commons para que los nombres coincidan.
+**Option B — Replace the entire structure.** Delete the example contracts and place yours with your own naming convention. In this case you also need to update the deployment script and constants to match the new names.
 
-En cualquier caso los pasos son:
+In either case the steps are:
 
-1. Coloca tus contratos en `contracts/`
-2. Actualiza `contracts/commons/commons.sol` con las constantes de tu proyecto (ver sección siguiente)
-3. Actualiza el nombre del facet en `scripts/project/deployContracts.ts` (línea `artifacts.readArtifact('ProjectFacet')`)
-4. Calcula y rellena las constantes del script de despliegue (ver sección siguiente)
+1. Place your contracts in `contracts/`
+2. Update `contracts/constants/constants.sol` with your project constants (see next section)
+3. Update the facet name in `scripts/project/deployContracts.ts` (line `artifacts.readArtifact('ProjectFacet')`)
+4. Calculate and fill in the constants in the deployment script (see next section)
 
-En el fichero `Adaptacion.md` puedes encontrar más detalles sobre cómo adaptar tu código de smart contracts para que tengan la estructura del diamante de ISBE.
+See `Adaptacion.md` for more details on how to adapt your smart contract code to the ISBE Diamond structure.
 
 ---
 
-## 3. Definir el namespace y las constantes
+## 3. Define your namespace and constants
 
-Los contratos de ejemplo usan un namespace genérico en `contracts/commons/commons.sol`:
+The example contracts use a generic namespace in `contracts/constants/constants.sol`:
 
 ```solidity
 bytes32 constant _PROJECT_STORAGE_POSITION = keccak256('isbe.customers.customer.project.storage');
@@ -111,7 +114,7 @@ bytes32 constant _PROJECT_RESOLVER_KEY     = keccak256('isbe.customers.customer.
 bytes32 constant _PROJECT_CONFIG_ID        = keccak256('isbe.customers.customer.project.configuration');
 ```
 
-Los términos `customer`, `project` y `role` son placeholders. En un despliegue real hay que sustituirlos por los valores propios del cliente: nombre de la empresa, nombre del proyecto y nombre del rol. Por ejemplo:
+The terms `customer`, `project` and `role` are placeholders. In a real deployment replace them with your own values: company name, project name, and role name. For example:
 
 ```solidity
 bytes32 constant _ACME_STORAGE_POSITION = keccak256('isbe.customers.acme.invoicing.storage');
@@ -120,24 +123,24 @@ bytes32 constant _ACME_RESOLVER_KEY     = keccak256('isbe.customers.acme.role.in
 bytes32 constant _ACME_CONFIG_ID        = keccak256('isbe.customers.acme.invoicing.configuration');
 ```
 
-Una vez definido el namespace, hay que calcular los valores hash para el script de despliegue:
+Once the namespace is defined, calculate the hash values for the deployment script:
 
 ```typescript
-const PROJECT_RESOLVER_KEY = '' // keccak256 del resolver key de tu facet
-const PROJECT_CONFIG_ID = ''    // keccak256 del config ID de tu proyecto
+const PROJECT_RESOLVER_KEY = '' // keccak256 of your facet's resolver key
+const PROJECT_CONFIG_ID = ''    // keccak256 of your project's config ID
 ```
 
-Puedes calcularlos con Node.js:
+You can calculate them with Node.js:
 
 ```bash
 node -e "const { ethers } = require('ethers'); console.log(ethers.keccak256(ethers.toUtf8Bytes('isbe.customers.acme.role.invoicing.resolver.key')))"
 ```
 
-Los valores deben coincidir exactamente con los definidos en `contracts/commons/commons.sol`.
+The values must match exactly what is defined in `contracts/constants/constants.sol`.
 
 ---
 
-## 4. Compilar
+## 4. Compile
 
 ```bash
 npx hardhat compile
@@ -145,19 +148,19 @@ npx hardhat compile
 
 ---
 
-## 5. Desplegar
+## 5. Deploy
 
 ```bash
 npx hardhat run scripts/project/deployContracts.ts --network isbe
 ```
 
-El script realiza tres pasos automáticamente:
+The script runs three steps automatically:
 
-1. **`deploy`** — registra el bytecode de tu facet en el Diamond con el resolver key
-2. **`setConfiguration`** — asocia el resolver key con el config ID
-3. **`deployUseCase`** — despliega el proxy que enruta al facet registrado
+1. **`deploy`** — registers your facet bytecode in the Diamond with the resolver key
+2. **`setConfiguration`** — associates the resolver key with the config ID
+3. **`deployUseCase`** — deploys the proxy that routes calls to the registered facet
 
-Al finalizar muestra un resumen con las direcciones de la implementación y del proxy.
+When finished it prints a summary with the implementation and proxy addresses.
 
 ---
 
@@ -167,59 +170,59 @@ Al finalizar muestra un resumen con las direcciones de la implementación y del 
 npx hardhat test
 ```
 
-Los tests usan `ProjectTestWrapper`, un contrato que extiende el facet con helpers de inicialización y pausa para pruebas unitarias aisladas, sin necesidad de infraestructura de gobernanza.
+Tests use `ProjectTestWrapper`, a contract that extends the facet with initialization and pause helpers for isolated unit testing, without needing governance infrastructure.
 
 ---
 
-## Cómo funciona el patrón Diamond en ISBE
+## How the Diamond pattern works in ISBE
 
-La red ISBE tiene un proxy Diamond en una dirección fija de génesis:
+The ISBE network has a Diamond proxy at a fixed genesis address:
 
 ```
 0x00000000000000000000000000000000000015BE
 ```
 
-Este proxy enruta las llamadas a los facets registrados. Al desplegar un caso de uso no se despliega un contrato de forma directa — se registra la implementación en el Diamond y este crea el proxy. Eso significa que:
+This proxy routes calls to registered facets. When deploying a use case you do not deploy a contract directly — you register the implementation in the Diamond and it creates the proxy. This means:
 
-- La dirección del proxy la asigna el Diamond, no el deployer
-- El storage del contrato persiste entre actualizaciones
-- Para actualizar la lógica basta con registrar una nueva versión del bytecode (pasos 1 y 2) sin redesplegar el proxy
+- The proxy address is assigned by the Diamond, not the deployer
+- Contract storage persists across upgrades
+- To upgrade the logic, simply register a new version of the bytecode (steps 1 and 2) without redeploying the proxy
 
 ---
 
-## Ejemplo: HashTimestamp
+## Example: HashTimestamp
 
-La carpeta `contracts/example-hashtimestamp/` contiene un caso de uso completo y funcional que sirve como referencia de cómo debería quedar un proyecto real adaptado a esta plantilla.
+The `contracts/example-hashtimestamp/` folder contains a complete, working use case that serves as a reference for how a real project adapted to this template should look.
 
-`HashTimestampFacet` es un facet que permite registrar hashes en blockchain junto con su timestamp. Una vez registrado un hash, queda sellado con la marca de tiempo del bloque y no puede volver a registrarse. Expone tres funciones: `timestampHash`, `exists` y `getTimestamp`.
+`HashTimestampFacet` is a facet that allows registering hashes on-chain with their timestamp. Once a hash is registered it is sealed with the block timestamp and cannot be registered again. It exposes three functions: `timestampHash`, `exists` and `getTimestamp`.
 
-La estructura del ejemplo sigue exactamente el mismo patrón que se espera de cualquier proyecto real:
+The example structure follows exactly the same pattern expected of any real project:
 
 ```
 contracts/
-  constants/constants.sol                              — constantes del ejemplo añadidas al constants compartido
+  constants/constants.sol                          — example constants added to the shared constants file
   example-hashtimestamp/
-    IHashTimestamp.sol                             — interfaz pública
-    HashTimestampInternal.sol                      — lógica y storage internos
-    HashTimestamp.sol                              — contrato abstracto con las funciones externas
-    HashTimestampFacet.sol                         — facet Diamond con introspección EIP-2535
+    IHashTimestamp.sol                             — public interface
+    HashTimestampInternal.sol                      — internal logic and storage
+    HashTimestamp.sol                              — abstract contract with external functions
+    HashTimestampFacet.sol                         — Diamond facet with EIP-2535 introspection
   testwrapper/hashtimestamp/
-    HashTimestampTestWrapper.sol                   — wrapper para tests unitarios
+    HashTimestampTestWrapper.sol                   — wrapper for unit tests
 scripts/
   hashtimestamp/
-    deployHashTimestamp.ts                         — script de despliegue del ejemplo
+    deployHashTimestamp.ts                         — example deployment script
 ```
 
-Para desplegar el ejemplo en la red local:
+To deploy the example on the local network:
 
 ```bash
 npx hardhat run scripts/hashtimestamp/deployHashTimestamp.ts --network isbe
 ```
 
-Al adaptar esta plantilla a un proyecto propio, este ejemplo muestra concretamente qué hay que hacer en cada archivo: dónde definir el storage, cómo implementar la introspección EIP-2535, cómo añadir las constantes al commons, y cómo ajustar el script de despliegue con el namespace y los hashes correctos.
+When adapting this template to your own project, this example shows concretely what to do in each file: where to define storage, how to implement EIP-2535 introspection, how to add constants, and how to adjust the deployment script with the correct namespace and hashes.
 
 ---
 
-## Licencia
+## License
 
 Apache-2.0
