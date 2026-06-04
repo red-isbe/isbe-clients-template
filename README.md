@@ -1,8 +1,10 @@
-# isbe-customers-template
+# isbe-clients-template
 
 Plantilla para desplegar contratos inteligentes propios en una red local de ISBE.
 
 Este repositorio incluye todo lo necesario para: levantar una red ISBE local con Docker, escribir y compilar contratos Solidity, y desplegarlos en la red mediante el patrón Diamond (EIP-2535).
+
+Para más información sobre ISBE, consulta la documentación oficial: [Red ISBE](https://docs.redisbe.com/documentation/)
 
 ---
 
